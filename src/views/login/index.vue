@@ -2,7 +2,7 @@
     <!-- 大盒子 有且只能有一个 -->
     <div class="login-container">
         <!-- 登陆表单 -->
-        <el-form ref="loginForm" class="login-form" autocomplete="on">
+        <el-form ref="loginForm" :model="loginForm" class="login-form" autocomplete="on">
             <!-- 标题 -->
             <div class="title-container">
                 <h3 class="title">基于 Vue.js 和 Element UI 实现的一个后台前端解决方案</h3>
@@ -34,6 +34,7 @@
             <!-- 登录按钮 -->
             <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;"
                 @click.native.prevent="handleLogin">登录</el-button>
+            <!-- 登录提示 -->
             <div style="position:relative">
                 <div class="tips">
                     <span>Username : admin</span>
@@ -60,7 +61,21 @@ export default {
             },
             passwordType: 'password',
             capsTooltip: false,
-            loading: false
+            loading: false,
+            redirect: undefined,
+            otherQuery: {}
+        }
+    },
+    watch: {
+        $route: {
+            handler: function (route) { // 动态获取当前路由信息
+                const query = route.query // query=路由参数
+                if (query) {
+                    this.redirect = query.redirect
+                    this.otherQuery = this.getOtherQuery(query)
+                }
+            },
+            immediate: true
         }
     },
     methods: {
@@ -72,7 +87,12 @@ export default {
             this.$refs.loginForm.validate(valid => {
                 if (valid) {
                     this.loading = true
-                    this.$store.dispatch('user/login', this.loginForm).then(() => {
+                    this.$store.dispatch('user/login', this.loginForm).then(() => { // 此时已经拿到了token
+                        /**下面这条语句的意思是，如果你是token过期然后path为dashboard仪表盘之类的路径过来的话，
+                         * 这里的redirect就是你刚刚从别的地方跳转过来login重新登录的地址，如redirect
+                         * 这是为了方便你从别的地方token过期之后转过来重新登陆之后可以直接回到刚刚的页面，
+                         * query参数则是你刚刚失效前的参数原封不动传回给你 
+                         * */
                         this.$router.push({ path: this.redirect || '/', query: this.otherQuery })
                         this.loading = false
                     }).catch(() => {
@@ -93,6 +113,14 @@ export default {
             this.$nextTick(() => {
                 this.$refs.password.focus()
             })
+        },
+        getOtherQuery(query) { // 这个函数的作用是获取除了key为redirect之外所有的键值对数组
+            return Object.keys(query).reduce((acc, cur) => {
+                if (cur !== 'redirect') {
+                    acc[cur] = query[cur] //acc是除了key为redirect之外所有的键值对数组
+                }
+                return acc
+            }, {})// 这里第二个参数{}是初始值
         }
     }
 }

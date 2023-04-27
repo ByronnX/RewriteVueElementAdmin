@@ -1,7 +1,8 @@
 <template>
     <!-- 最外层的容器 -->
     <div class="app-wrapper">
-        222222222222222
+        这里src.Layout.index
+        <router-view></router-view>
     </div>
 </template>
 
